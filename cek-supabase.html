@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pemeriksaan Supabase CBT</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: #f4f6f9;
+      color: #172033;
+    }
+    main {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+    }
+    .status {
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 8px;
+      background: #edf0f4;
+      overflow-wrap: anywhere;
+    }
+    button {
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #2457d6;
+      color: white;
+      font-size: 16px;
+    }
+    small { color: #586174; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Pemeriksaan Supabase CBT</h1>
+  <p>Halaman ini menguji pemuatan library, client,
+     dan permintaan ke database tanpa Console.</p>
+
+  <div id="library" class="status">1. Memeriksa library...</div>
+  <div id="client" class="status">2. Memeriksa client...</div>
+  <div id="database" class="status">3. Menunggu pengujian...</div>
+
+  <button id="testButton" type="button">Uji Ulang</button>
+  <p><small>Halaman ini tidak menampilkan isi data tabel.</small></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script>
+  const libraryStatus = document.getElementById("library");
+  const clientStatus = document.getElementById("client");
+  const databaseStatus = document.getElementById("database");
+  const testButton = document.getElementById("testButton");
+
+  async function runTest() {
+    testButton.disabled = true;
+    databaseStatus.textContent = "3. Sedang menguji permintaan database...";
+
+    const libraryReady =
+      !!(window.supabase &&
+         typeof window.supabase.createClient === "function");
+
+    libraryStatus.textContent = libraryReady
+      ? "1. Library Supabase berhasil dimuat."
+      : "1. Library Supabase tidak terdeteksi. Periksa koneksi internet atau pemuatan CDN.";
+
+    const clientReady =
+      !!(window.supabaseClient &&
+         typeof window.supabaseClient.from === "function");
+
+    clientStatus.textContent = clientReady
+      ? "2. Objek supabaseClient tersedia."
+      : "2. Objek supabaseClient belum terbentuk. Periksa URL, publishable key, dan file konfigurasi.";
+
+    if (!libraryReady || !clientReady) {
+      databaseStatus.textContent =
+        "3. Pengujian database dilewati karena library atau client belum siap.";
+      testButton.disabled = false;
+      return;
+    }
+
+    try {
+      const { error } = await window.supabaseClient
+        .from("profiles")
+        .select("*")
+        .limit(1);
+
+      if (error) {
+        databaseStatus.textContent =
+          "3. Permintaan database gagal: " +
+          error.message +
+          ". Periksa nama tabel, izin akses RLS, dan konfigurasi Supabase.";
+      } else {
+        databaseStatus.textContent =
+          "3. Permintaan ke tabel profiles berhasil dijalankan. " +
+          "Isi data tidak ditampilkan. Ini belum membuktikan bahwa " +
+          "akses login, siswa, proktor, dan seluruh tabel sudah benar.";
+      }
+    } catch (err) {
+      databaseStatus.textContent =
+        "3. Pengujian gagal: permintaan tidak dapat diselesaikan. " +
+        "Periksa koneksi internet dan konfigurasi website.";
+    }
+
+    testButton.disabled = false;
+  }
+
+  testButton.addEventListener("click", runTest);
+  runTest();
+</script>
+</body>
+</html>
